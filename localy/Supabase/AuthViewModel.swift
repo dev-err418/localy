@@ -1,0 +1,88 @@
+//
+//  AuthViewModel.swift
+//  lookup
+//
+//  Created by arthur on 17/05/2024.
+//
+
+import Foundation
+import Supabase
+import Combine
+
+enum AuthState: Hashable {
+    case Initial
+    case SignIn
+    case SignOut
+}
+
+class AuthViewModel: ObservableObject {    
+    @Published var email: String = ""
+    @Published var password: String = ""
+    @Published var errorMessage: String = ""
+    @Published var authState: AuthState = AuthState.Initial
+    @Published var isLoading = false
+    @Published var isQueryLoading = false
+    
+    var cancellable = Set<AnyCancellable>()
+    
+    private var supabaseAuth: SupabaseAuth = SupabaseAuth()
+    
+    @MainActor
+    func isUserSignIn() async {
+        do {
+            try await supabaseAuth.LoginUser()
+            authState = AuthState.SignIn
+        } catch _ {
+            authState = AuthState.SignOut
+        }
+    }
+    
+    @MainActor
+    func signIn(idToken: String) async {
+        do {
+            isLoading = true
+            try await supabaseAuth.SignIn(idToken: idToken)
+            authState = AuthState.SignIn
+            isLoading = false
+        } catch let error {
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
+    }
+    
+    @MainActor
+    func signOut() async {
+        do {
+            try await supabaseAuth.SignOut()
+            authState = AuthState.SignOut
+        } catch let error {
+            errorMessage = error.localizedDescription
+        }
+    }
+    
+    @MainActor
+    func queryWeb(query: String) async {
+        do {
+            isQueryLoading = true
+            try await supabaseAuth.QueryWeb(query: query)
+            isQueryLoading = false
+            
+        } catch let error {
+            errorMessage = error.localizedDescription
+            isQueryLoading = false
+        }
+    }
+    
+    @MainActor
+    func signInTest() async {
+        do {
+            isLoading = true
+            try await supabaseAuth.LoginTest()
+            authState = AuthState.SignIn
+            isLoading = false
+        } catch let error {
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
+    }
+}
