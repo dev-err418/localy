@@ -16,7 +16,7 @@ struct ContentView: View {
     @State private var commands_list: [Command] = [
         .init(name: "Account", icon: "person.crop.circle.fill", section: settings),
         .init(name: "Change files", icon: "gear", section: settings),
-        .init(name: "/q Ask questions", icon: "command", section: ai),
+        .init(name: "/w Ask the web", icon: "command", section: ai),
         .init(name: "/r Reformulate", icon: "command", section: ai),
         .init(name: "/s Summarize", icon: "command", section: ai),
     ]
@@ -51,9 +51,9 @@ struct ContentView: View {
                     .fill(Color.clear)
             )
             .contentShape(Rectangle())
-        }, detailsView: { command in
+        }, detailsView: { command, queryContent, isLoading in
             if let command = command.wrappedValue {
-                if command.name.prefix(2) == "/q" {
+                if command.name.prefix(2) == "/w" {
                     Question()
                 } else if command.name.prefix(2) == "/r" {
                     Reformulation()
@@ -67,11 +67,11 @@ struct ContentView: View {
                     Text("The currently selected thing is \(command.name).")
                 }
             } else {
-                Text("Nothing to see here...")
+                GlobalQuery(queryContent: queryContent, isLoading: isLoading)
             }
         }, authViewModel: authViewModel, prompt: "Enter your query...")
         .onAppear {
-            self.commands_list.append(contentsOf: self.enumerateAppsFolder().map { Command(name: $0.name, icon: $0.path, section: apps) })
+            //self.commands_list.append(contentsOf: self.enumerateAppsFolder().map { Command(name: $0.name, icon: $0.path, section: apps) })
         }
     }
     

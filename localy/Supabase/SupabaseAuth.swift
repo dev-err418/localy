@@ -8,7 +8,7 @@
 import Supabase
 import Foundation
 
-struct Response: Decodable {
+struct Response: Decodable, Hashable {
     let title: String
     let url: String
     let age: String?
@@ -18,11 +18,11 @@ struct Response: Decodable {
 
 class SupabaseAuth {
     let client = SupabaseClient(
-        supabaseURL: URL(string: "https://nghcmsbksjdehvnpgata.supabase.co")!,
-        supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5naGNtc2Jrc2pkZWh2bnBnYXRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU3ODYzMTgsImV4cCI6MjAzMTM2MjMxOH0.b-nyOYcX0rHaIozvh975cbUlA5-2fyAz4NUNjRm3I6E"
+        supabaseURL: URL(string: "https://cwhqudvcynincccneemq.supabase.co")!,
+        supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3aHF1ZHZjeW5pbmNjY25lZW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTYyODg3NDUsImV4cCI6MjAzMTg2NDc0NX0.DH3fCT-Wl77qUJLnqvY0pCLLh1yuYRkjvZJOdPHF7IY"
     )
     
-    func QueryWeb(query: String) async throws {
+    func QueryWeb(query: String) async throws -> [Response] {
         do {
             let response = try await client.functions.invoke(
                 "query-web",
@@ -39,8 +39,8 @@ class SupabaseAuth {
             let decoder = JSONDecoder()
 
             do {
-                let jsonArray = try decoder.decode([Response].self, from: data)
-                print(jsonArray)
+                let jsonArray = try decoder.decode([Response].self, from: data)                
+                return jsonArray
             } catch {
                 print("Error decoding JSON: \(error)")
             }
@@ -48,8 +48,10 @@ class SupabaseAuth {
             print(error)
             throw error
         }
+        
+        return []
     }
-    
+        
     func LoginTest() async throws {
         do {
             try await client.auth.signIn(
@@ -61,11 +63,13 @@ class SupabaseAuth {
         }
     }
     
-    func LoginUser() async throws {
+    func LoginUser() async throws -> [String] {        
         do {
-            let session = try await client.auth.session
-            //print(session)
+            let session = try await client.auth.refreshSession()     
+            //let user = try await client.auth.user(jwt: session.accessToken)            
+            return [session.accessToken, session.refreshToken]
         } catch let error {
+            print(error)
             throw error
         }
     }
@@ -85,7 +89,7 @@ class SupabaseAuth {
     
     func SignOut() async throws {
         do {
-            try await client.auth.signOut()
+            try await client.auth.signOut(scope: .local)
         } catch let error {
             throw error
         }

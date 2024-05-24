@@ -27,9 +27,11 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
     @Binding var items: [Item]
     
     @ViewBuilder let itemView: (Item, Binding<Item?>, Bool, SearchItemSection) -> (ItemView)
-    @ViewBuilder let detailsView: (Binding<Item?>) -> (DetailsView)
+    @ViewBuilder let detailsView: (Binding<Item?>, [Response], Bool) -> (DetailsView)
         
     @State private var selectedItem: Item?
+    @State private var queryContent: [Response] = []
+    @State private var isLoading: Bool = false
     
     @FocusState private var isFocused: Bool
     
@@ -78,10 +80,10 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
             }, label: {})
             .keyboardShortcut(.upArrow, modifiers: [])
             
-            Button(action: {
+            /*Button(action: {
                 enterPressed()
             }, label: {})
-            .keyboardShortcut(.defaultAction)
+            .keyboardShortcut(.defaultAction)*/
         }
         .opacity(0.0)
         .allowsHitTesting(false)
@@ -90,7 +92,6 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
     
     public var body: some View {
         ZStack {
-            Text("yo")
             VisualEffectView(material: .sidebar, blendingMode: .behindWindow, state: .followsWindowActiveState, emphasized: true)
             VStack(spacing: 0) {
                 HStack(spacing: 16) {
@@ -104,12 +105,23 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
                         .font(.system(size: 26, weight: .regular))
                         .onChange(of: appState.query) {
                             // Whenever the query updates, update the selected item too
+                            queryContent = []
                             selectedItem = filteredItems.first
                         }
                         .focused($isFocused)
                         .onAppear {
                             self.isFocused = true
                         }
+                        .onSubmit {
+                            Task {
+                                isLoading = true
+                                queryContent = []
+                                queryContent = await authViewModel.queryWeb(query: appState.query)
+                                isLoading = false
+                            }
+                        }
+                        .disabled(isLoading)
+                    
                     switch (authViewModel.authState) {
                     case .Initial:
                         ProgressView()
@@ -131,63 +143,65 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
                 .padding(16)
                 
                 Divider()
-                
+                                
                 HStack(spacing: 0) {
-                    VStack {
-                        //Spacer()
-                        ScrollViewReader { proxy in
-                            ScrollView {
-                                VStack() {
-                                    ForEach(sections) { section in
-                                        let items = filteredItems(in: section)
-                                        
-                                        // Only show section if it has any items
-                                        if !items.isEmpty {
-                                            let selected = section == selectedItem?.section
+                    if !filteredItems.isEmpty {
+                        VStack {
+                            //Spacer()
+                            ScrollViewReader { proxy in
+                                ScrollView {
+                                    VStack() {
+                                        ForEach(sections) { section in
+                                            let items = filteredItems(in: section)
                                             
-                                            VStack() {
-                                                // Section title
-                                                Text(section.name.uppercased())
-                                                    .font(.system(size: selected ? 15 : 14, weight: .bold))
-                                                    .foregroundStyle(selected ? .secondary : .tertiary)
-                                                    .frame(width: 256.0 - 16.0, height: 15, alignment: .leading)
-                                                    .padding(.top, 8)
+                                            // Only show section if it has any items
+                                            if !items.isEmpty {
+                                                let selected = section == selectedItem?.section
                                                 
-                                                // Section items
-                                                ForEach(0..<items.count, id: \.self) { itemIndex in
-                                                    let item = items[itemIndex]
-                                                    itemView(item, $selectedItem, selectedItem == item, section)
-                                                        .id(itemIndex)
-                                                        .onTapGesture {
-                                                            selectedItem = item
-                                                        }                                                        
-                                                    // to try to auto scroll
-                                                        .onChange(of: selectedItem) {
-                                                            proxy.scrollTo(filteredItems.firstIndex(of: selectedItem!)!, anchor: .bottom)
-                                                        }
-                                                }
-                                            }.frame(width: 256.0 - 16.0)
-                                            .padding(.vertical, 8)
+                                                VStack() {
+                                                    // Section title
+                                                    Text(section.name.uppercased())
+                                                        .font(.system(size: selected ? 15 : 14, weight: .bold))
+                                                        .foregroundStyle(selected ? .secondary : .tertiary)
+                                                        .frame(width: 256.0 - 16.0, height: 15, alignment: .leading)
+                                                        .padding(.top, 8)
+                                                    
+                                                    // Section items
+                                                    ForEach(0..<items.count, id: \.self) { itemIndex in
+                                                        let item = items[itemIndex]
+                                                        itemView(item, $selectedItem, selectedItem == item, section)
+                                                            .id(itemIndex)
+                                                            .onTapGesture {
+                                                                selectedItem = item
+                                                            }
+                                                        // to try to auto scroll
+                                                            .onChange(of: selectedItem) {
+                                                                proxy.scrollTo(filteredItems.firstIndex(of: selectedItem!)!, anchor: .bottom)
+                                                            }
+                                                    }
+                                                }.frame(width: 256.0 - 16.0)
+                                                    .padding(.vertical, 8)
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        }.background(shortcuts)
-                            .onAppear {
-                                selectedItem = filteredItems.first
-                            }
-                        // if we set the animation, the image will rerender...
+                            }.background(shortcuts)
+                                .onAppear {
+                                    selectedItem = filteredItems.first
+                                }
+                            // if we set the animation, the image will rerender...
                             //.animation(.spring(response: 0.2, dampingFraction: 0.85), value: selectedItem)
-                            .frame(maxWidth: 256.0)
+                                .frame(maxWidth: 256.0)
+                        }
                     }
                     HStack(spacing: 0) {
                         Divider()
-                        detailsView($selectedItem)
-                            .frame(width: 800.0 - 256.0)
-                    }
-                }
+                        detailsView($selectedItem, queryContent, isLoading)
+                            .frame(width: filteredItems.isEmpty ? 800.0 : 800.0 - 256.0)
+                    }.transition(.move(edge: .trailing))
+                }.animation(.easeInOut, value: filteredItems.isEmpty)
             }
-        }.task {            
+        }.task {
             await authViewModel.isUserSignIn()
         }
     }
@@ -205,14 +219,6 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
             }
         } else {
             selectedItem = filteredItems.first
-        }
-    }
-    
-    func enterPressed() {
-        if self.selectedItem?.section.name == "Apps" {
-            let url = NSURL(fileURLWithPath: self.selectedItem!.icon)
-            NSWorkspace.shared.openApplication(at: url as URL, configuration: .init(), completionHandler: nil)
-            print(url)
         }
     }
 }

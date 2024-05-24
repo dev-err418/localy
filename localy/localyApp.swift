@@ -35,8 +35,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     var appState = AppState.shared
     var isPresented: Bool = true
     var newEntryPanel: FloatingPanel!
+    var authModel = AuthViewModel()
+    //var supabase = SupabaseAuth()
     
-    let filewatcher = FileWatcher([NSString(string: "~/Downloads").expandingTildeInPath])
+    //let filewatcher = FileWatcher([NSString(string: "~/Downloads").expandingTildeInPath])
     let manager = BookmarkManager.manager
     
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -56,15 +58,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             self.togglePanel()
         }
 
-        filewatcher.callback = { (event: FileWatcherEvent) in
-            print("Something happened here: \(event.path)")
-            Swift.print("event.description:  \(event.description)")
-            if !FileManager().fileExists(atPath: event.path) { Swift.print("was deleted") }
-            Swift.print("event.flags:  \(event.flags)")
-        }
+        //filewatcher.callback = { (event: FileWatcherEvent) in
+        //    print("Something happened here: \(event.path)")
+        //    Swift.print("event.description:  \(event.description)")
+        //    if !FileManager().fileExists(atPath: event.path) { Swift.print("was deleted") }
+        //    Swift.print("event.flags:  \(event.flags)")
+        //}
 
-        filewatcher.queue = DispatchQueue.global()
-        filewatcher.start()
+        //filewatcher.queue = DispatchQueue.global()
+        //filewatcher.start()
     }
     
     // this function is called when Cmd + q is called from the user
@@ -84,14 +86,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
     
     private func togglePanel() {
+        self.isPresented.toggle()
+        self.appState.query = ""
         if (self.newEntryPanel.isVisible) {
             self.newEntryPanel?.close()
         } else {
             self.newEntryPanel?.orderFront(nil)
             self.newEntryPanel?.makeKey()
+            Task {
+                //try await supabase.LoginUser()
+                await authModel.isUserSignIn()
+            }
         }
-        self.isPresented.toggle()
-        self.appState.query = ""
     }
 }
 

@@ -21,19 +21,21 @@ class AuthViewModel: ObservableObject {
     @Published var errorMessage: String = ""
     @Published var authState: AuthState = AuthState.Initial
     @Published var isLoading = false
-    @Published var isQueryLoading = false
     
     var cancellable = Set<AnyCancellable>()
     
-    private var supabaseAuth: SupabaseAuth = SupabaseAuth()
+    private var supabaseAuth: SupabaseAuth = SupabaseAuth()        
     
     @MainActor
-    func isUserSignIn() async {
+    func isUserSignIn() async -> [String] {
         do {
-            try await supabaseAuth.LoginUser()
+            // [access_token, refresh_token]
+            let tokens = try await supabaseAuth.LoginUser()            
             authState = AuthState.SignIn
+            return tokens
         } catch _ {
             authState = AuthState.SignOut
+            return ["", ""]
         }
     }
     
@@ -61,16 +63,16 @@ class AuthViewModel: ObservableObject {
     }
     
     @MainActor
-    func queryWeb(query: String) async {
+    func queryWeb(query: String) async -> [Response] {
         do {
-            isQueryLoading = true
-            try await supabaseAuth.QueryWeb(query: query)
-            isQueryLoading = false
+            let query = try await supabaseAuth.QueryWeb(query: query)
+            return query
             
         } catch let error {
-            errorMessage = error.localizedDescription
-            isQueryLoading = false
+            errorMessage = error.localizedDescription            
         }
+        
+        return []
     }
     
     @MainActor
