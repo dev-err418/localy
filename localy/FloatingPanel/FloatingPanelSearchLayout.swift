@@ -189,18 +189,17 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
                                 .onAppear {
                                     selectedItem = filteredItems.first
                                 }
-                            // if we set the animation, the image will rerender...
-                            //.animation(.spring(response: 0.2, dampingFraction: 0.85), value: selectedItem)
-                                .frame(maxWidth: 256.0)
+                                .frame(width: 256.0)
                         }
+                        .transition(.move(edge: .leading))
                     }
                     HStack(spacing: 0) {
                         Divider()
                         detailsView($selectedItem, queryContent, isLoading)
-                            .frame(width: filteredItems.isEmpty ? 800.0 : 800.0 - 256.0)
-                    }.transition(.move(edge: .trailing))
-                }.animation(.easeInOut, value: filteredItems.isEmpty)
-            }
+                            .frame(minWidth: 800.0 - 256.0, maxWidth: 800.0)
+                    }
+                }
+            }.animation(.easeInOut(duration: 0.2), value: filteredItems.isEmpty)
         }.task {
             await authViewModel.isUserSignIn()
         }

@@ -69,6 +69,7 @@ struct ContentView: View {
             } else {
                 GlobalQuery(queryContent: queryContent, isLoading: isLoading)
             }
+                
         }, authViewModel: authViewModel, prompt: "Enter your query...")
         .onAppear {
             //self.commands_list.append(contentsOf: self.enumerateAppsFolder().map { Command(name: $0.name, icon: $0.path, section: apps) })
