@@ -30,8 +30,8 @@ class AuthViewModel: ObservableObject {
     func isUserSignIn() async -> [String] {
         do {
             // [access_token, refresh_token]
-            let tokens = try await supabaseAuth.LoginUser()            
-            authState = AuthState.SignIn
+            let tokens = try await supabaseAuth.LoginUser()
+            authState = AuthState.SignIn            
             return tokens
         } catch _ {
             authState = AuthState.SignOut

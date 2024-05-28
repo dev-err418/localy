@@ -30,6 +30,8 @@ struct GlobalQuery: View {
                                             .font(.system(size: 10))
                                             .lineLimit(2)
                                         
+                                        Spacer()
+                                        
                                         AsyncImage(url: URL(string: q.favicon)) { image in
                                             image.resizable()
                                         } placeholder: {
@@ -38,7 +40,7 @@ struct GlobalQuery: View {
                                         .frame(width: 16, height: 16)
                                         .clipShape(.rect(cornerRadius: 4))
                                         .help(q.title)
-                                    }.frame(width: 80, alignment: .leading)
+                                    }.frame(width: 100, height: 50, alignment: .leading)
                                     .padding(4)
                                     .background(.quaternary)
                                     .cornerRadius(4)

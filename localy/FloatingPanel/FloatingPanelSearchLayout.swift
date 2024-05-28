@@ -8,7 +8,7 @@
 import SwiftUI
 
 public protocol SearchItem: Identifiable, Equatable {
-    var id: ID { get }
+    var id: ID { get } 
     var name: String { get }
     var icon: String { get }
     var section: SearchItemSection { get }

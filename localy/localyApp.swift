@@ -95,6 +95,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             self.newEntryPanel?.makeKey()
             Task {
                 //try await supabase.LoginUser()
+                print("checking")
                 await authModel.isUserSignIn()
             }
         }

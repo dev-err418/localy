@@ -14,6 +14,7 @@ struct Response: Decodable, Hashable {
     let age: String?
     let content: String
     let favicon: String
+    let name: String
 }
 
 class SupabaseAuth {
@@ -65,11 +66,18 @@ class SupabaseAuth {
     
     func LoginUser() async throws -> [String] {        
         do {
-            let session = try await client.auth.refreshSession()     
-            //let user = try await client.auth.user(jwt: session.accessToken)            
+            //let s = try await client.auth.currentSession
+            
+            do {
+                try await client.auth.session
+            }
+            
+            //let user = try await client.auth.user(jwt: session.accessToken)
+            //print(session.user)
+            let session = try await client.auth.refreshSession()
             return [session.accessToken, session.refreshToken]
         } catch let error {
-            print(error)
+            //print(error)
             throw error
         }
     }

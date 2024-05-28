@@ -10,7 +10,8 @@ import SwiftUI
 struct Account: View {
     
     @State private var email: String = ""
-    @ObservedObject var authViewModel: AuthViewModel
+    //@ObservedObject var authViewModel: AuthViewModel
+    @ObservedObject var authViewModel = AuthViewModel()
     
     var body: some View {
         ZStack {
@@ -27,8 +28,9 @@ struct Account: View {
                         Task {
                             // [access_token, refresh_token]
                             let tokens = await authViewModel.isUserSignIn()
-                            let uri = "https://localy.vercel.app/auth?access=" + tokens[0] + "&refresh=" + tokens[1]
-                            if let url = URL(string: uri) {                                
+                            //let uri = "https://localy.vercel.app/auth?access=" + tokens[0] + "&refresh=" + tokens[1]
+                            let uri = "http://localhost:3000/auth?access=" + tokens[0] + "&refresh=" + tokens[1]
+                            if let url = URL(string: uri) {
                                 NSWorkspace.shared.open(url)
                             }
                         }
