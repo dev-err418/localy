@@ -38,6 +38,11 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
     @StateObject var appState = AppState.shared
     @StateObject var authViewModel: AuthViewModel
     
+    // --- DEBUG -----------
+    @State var generation: String = ""
+    @State var chatModel: ChatModel = GroqChatModel(authorizationToken: "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", chatModelConfiguration: ChatModelConfiguration.init(maxTokens: 1024, displayEvery: 1, systemPrompt: "You are a helpful assistant."))
+    // ---------------------
+    
     var prompt: String = "Browse"
     
     var sections: [SearchItemSection] {
@@ -119,6 +124,9 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
                                 queryContent = await authViewModel.queryWeb(query: appState.query)
                                 isLoading = false
                             }
+                            // --- DEBUG -----------
+                            chatModel.generate(prompt: appState.query) { text in self.generation = text }
+                            // ---------------------
                         }
                         .disabled(isLoading)
                     
@@ -143,6 +151,10 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
                 .padding(16)
                 
                 Divider()
+                
+                // --- DEBUG -----------
+                Text(generation)
+                // ---------------------
                                 
                 HStack(spacing: 0) {
                     if !filteredItems.isEmpty {

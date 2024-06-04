@@ -51,9 +51,9 @@ class GroqChatModel: ChatModel {
         request.setValue("Bearer \(authorizationToken)", forHTTPHeaderField: "Authorization")
         
         let query = Query(messages: [.init(role: "system", content: chatModelConfiguration.systemPrompt), .init(role: "user", content: prompt)], max_tokens: chatModelConfiguration.maxTokens)
-        request.httpBody = try! JSONSerialization.data(withJSONObject: query)
+        request.httpBody = try! JSONEncoder().encode(query)
         
-        let (bytes, response) = try! await URLSession.shared.bytes(for: request)
+        let (bytes, _) = try! await URLSession.shared.bytes(for: request)
         
         do {
             var index: Int = 0
