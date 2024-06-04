@@ -9,6 +9,15 @@ import CoreML
 import SwiftData
 import Foundation
 
+struct Metadata: Encodable, Decodable {
+    let author: String
+}
+
+struct FileChunk: Codable {
+    let text: String
+    let metadata: Metadata?
+}
+
 enum RestrictionLevel: Codable {
     case protected
     case normal
@@ -55,13 +64,13 @@ class PersistentMLMultiArray {
 @Model
 class File {
     var url: URL
-    var content: [String]
+    var chunks: [FileChunk]
     var embeddings: PersistentMLMultiArray
     var restrictionLevel: RestrictionLevel
     
-    init(url: URL, content: [String], embeddings: MLMultiArray, restrictionLevel: RestrictionLevel = .normal) {
+    init(url: URL, chunks: [FileChunk], embeddings: MLMultiArray, restrictionLevel: RestrictionLevel = .normal) {
         self.url = url
-        self.content = content
+        self.chunks = chunks
         self.embeddings = PersistentMLMultiArray(mlMultiArray: embeddings)
         self.restrictionLevel = restrictionLevel
     }
@@ -82,15 +91,48 @@ class FileSystem {
         await self.embeddingModel.loadModel(downloadBase: FileSystem.downloadBase, modelName: embeddingModelName, callback: callBack)
     }
     
+    func files() -> [File] {
+        return try! self.context.fetch(FetchDescriptor<File>(predicate: #Predicate { _ in true }))
+    }
+    
     private func embedFile(path: URL, restrictionLevel: RestrictionLevel = .normal) {
         guard let fileContent = try? String(contentsOf: path) else { return }
         
-        let (content, embeddings) = self.embeddingModel.embed(text: fileContent)
-        self.context.insert(File(url: path, content: content, embeddings: embeddings, restrictionLevel: restrictionLevel))
+        let (chunks, embeddings) = self.embeddingModel.embed(text: fileContent)
+        self.context.insert(File(url: path, chunks: chunks.map { t in FileChunk(text: t, metadata: nil) }, embeddings: embeddings, restrictionLevel: restrictionLevel))
     }
     
-    func embedFile(paths: [URL], restrictionLevel: RestrictionLevel = .normal) {
-        let _ = paths.map { path in embedFile(path: path) }
+    // This method support folders
+    func embedFiles(urls: [URL], restrictionLevel: RestrictionLevel = .normal) {
+        for url in urls {
+            var paths = [URL]()
+            
+            paths.append(contentsOf: FileManager.default.subpaths(atPath: url.path())?.map({ sp in url.appending(path: sp)}) ?? [])
+            if paths.count == 0 {
+                paths.append(url)
+            }
+            let _ = paths.map { path in embedFile(path: path) }
+        }
         try! self.context.save()
+    }
+    
+    func search(query: String, num_results: Int = 6) -> [FileChunk] {
+        let (_, queryEmbeddings) = self.embeddingModel.embed(chunks: [query])
+        let indices = self.embeddingModel.search(query: queryEmbeddings, files: files().map({ file in file.embeddings.asMLMultiArray() })).prefix(num_results)
+        
+        let files = files()
+        var fileChunks = [FileChunk]()
+        
+        for index in indices {
+            var i = index
+            for file in files {
+                i -= file.embeddings.shape[0]
+                if (i < 0) {
+                    fileChunks.append(file.chunks[i + file.embeddings.shape[0]])
+                }
+            }
+        }
+        
+        return fileChunks
     }
 }

@@ -103,9 +103,13 @@ class EmbeddingModel {
     }
     
     func embed(text: String) -> ([String], MLMultiArray) {
-        var embeddings: [MLMultiArray] = []
-        
         let chunks = self.splitter!.split(text: text)
+        
+        return embed(chunks: chunks)
+    }
+    
+    func embed(chunks: [String]) -> ([String], MLMultiArray) {
+        var embeddings: [MLMultiArray] = []
         
         let (inputs_ids, masks) = self.splitter!.tokenize(chunks: chunks)
         for (input_ids, mask) in zip(inputs_ids, masks) {
@@ -114,5 +118,19 @@ class EmbeddingModel {
         }
         
         return (chunks, MLMultiArray(concatenating: embeddings, axis: 0, dataType: MLMultiArrayDataType.float16))
+    }
+    
+    func search(query: MLMultiArray, files: [MLMultiArray]) -> [Int] {
+        let filesMLMultiArray = MLMultiArray(concatenating: files, axis: 0, dataType: MLMultiArrayDataType.float16)
+        let outputs = try! cosim!.prediction(from: CosimInput(query: query, files: filesMLMultiArray))
+        
+        let similarities = outputs.featureValue(for: "outputs")!.multiArrayValue!
+        var similaritiesArray = [Float](repeating: 0, count: similarities.count)
+        
+        for i in 0..<similarities.count {
+            similaritiesArray[i] = similarities[i].floatValue
+        }
+        
+        return Array(similaritiesArray.enumerated().map({ ($0.element, $0.offset) }).sorted(by: { a, b in a.0 > b.0 }).map({ $0.1 }))
     }
 }
