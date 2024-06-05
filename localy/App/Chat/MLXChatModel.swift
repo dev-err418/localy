@@ -33,7 +33,7 @@ class MLXChatModel: ChatModel {
         }
     }
     
-    func loadModel(downloadBase: URL, chatModelConfiguration: ChatModelConfiguration, callback: ((Progress) -> Void)?) async {
+    func loadModel(downloadBase: URL, callback: ((Progress) -> Void)?) async {
         if !FileManager.default.fileExists(atPath: downloadBase.appending(path: chatModelConfiguration.modelConfiguration!.name).path()) {
             let chatRepo = Hub.Repo(id: chatModelConfiguration.modelConfiguration!.name, type: .models)
             try! await HubApi().snapshot(from: chatRepo, matching: ["*"]) { progress in

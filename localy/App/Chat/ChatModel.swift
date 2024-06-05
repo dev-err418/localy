@@ -22,7 +22,7 @@ protocol ChatModel {
     var chatModelConfiguration: ChatModelConfiguration { get }
     func asyncGenerate(prompt: String, callback: @escaping (String) -> Void) async
     func generate(prompt: String, callback: @escaping (String) -> Void)
-    func loadModel(downloadBase: URL, chatModelConfiguration: ChatModelConfiguration, callback: ((Progress) -> Void)?) async
+    func loadModel(downloadBase: URL, callback: ((Progress) -> Void)?) async
 }
 
 extension ChatModel {

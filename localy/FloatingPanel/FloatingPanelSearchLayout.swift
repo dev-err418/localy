@@ -5,6 +5,7 @@
 //  Created by arthur on 09/05/2024.
 //
 
+import MLXLLM
 import SwiftUI
 
 public protocol SearchItem: Identifiable, Equatable {
@@ -40,7 +41,8 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
     
     // --- DEBUG -----------
     @State var generation: String = ""
-    @State var chatModel: ChatModel = GroqChatModel(authorizationToken: "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", chatModelConfiguration: ChatModelConfiguration.init(maxTokens: 1024, displayEvery: 1, systemPrompt: "You are a helpful assistant."))
+    // @State var chatModel: ChatModel = GroqChatModel(authorizationToken: "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", chatModelConfiguration: ChatModelConfiguration.init(maxTokens: 1024, displayEvery: 1, systemPrompt: "You are a helpful assistant."))
+    @State var chatModel: ChatModel = MLXChatModel(chatModelConfiguration: ChatModelConfiguration.init(maxTokens: 256, displayEvery: 4, systemPrompt: "You are a helpful assistant.", modelConfiguration: ModelConfiguration.phi34bit))
     // ---------------------
     
     var prompt: String = "Browse"
@@ -214,6 +216,7 @@ public struct FloatingPanelSearchLayout<Item: SearchItem, ItemView: View, Detail
             }.animation(.easeInOut(duration: 0.2), value: filteredItems.isEmpty)
         }.task {
             await authViewModel.isUserSignIn()
+            await chatModel.loadModel(downloadBase: FileSystem.downloadBase) { progress in print(progress) }
         }
     }
     
